@@ -47,7 +47,7 @@ public sealed partial class ChatSystem
                 speech = proto;
         }
 
-        name = FormattedMessage.EscapeText(name);
+        name = $"[chatlink=\"{FormattedMessage.EscapeStringParameter(name)}\" ent=\"{GetNetEntity(source)}\"]";
 
         var wrappedMessage = Loc.GetString(speech.Bold ? "chat-manager-entity-say-bold-wrap-message" : "chat-manager-entity-say-wrap-message",
             ("entityName", name),
@@ -117,7 +117,7 @@ public sealed partial class ChatSystem
             RaiseLocalEvent(source, nameEv);
             name = nameEv.VoiceName;
         }
-        name = FormattedMessage.EscapeText(name);
+        name = $"[chatlink=\"{FormattedMessage.EscapeStringParameter(name)}\" ent=\"{GetNetEntity(source)}\"]";
 
         var wrappedMessage = Loc.GetString("chat-manager-entity-whisper-wrap-message",
             ("entityName", name), ("message", FormattedMessage.EscapeText(message)));
@@ -213,6 +213,7 @@ public sealed partial class ChatSystem
     private void SendLOOC(EntityUid source, ICommonSession player, string message, bool hideChat)
     {
         var name = FormattedMessage.EscapeText(Identity.Name(source, EntityManager));
+        name = $"[chatlink=\"{FormattedMessage.EscapeStringParameter(name)}\" ent=\"{GetNetEntity(source)}\"]";
 
         if (_adminManager.IsAdmin(player))
         {
@@ -250,6 +251,7 @@ public sealed partial class ChatSystem
         }
         else
         {
+            playerName = $"[chatlink=\"{FormattedMessage.EscapeStringParameter(playerName)}\" ent=\"{GetNetEntity(source)}\"]";
             wrappedMessage = Loc.GetString("chat-manager-send-dead-chat-wrap-message",
                 ("deadChannelName", Loc.GetString("chat-manager-dead-channel-name")),
                 ("playerName", (playerName)),

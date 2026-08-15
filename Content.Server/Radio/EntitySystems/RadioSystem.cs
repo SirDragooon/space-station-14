@@ -1,17 +1,11 @@
-using Content.Server.Access.Systems;
 using Content.Server.Administration.Logs;
 using Content.Server.Chat.Systems;
 using Content.Server.Power.Components;
-using Content.Shared.Access.Components;
-using Content.Shared.Access.Systems;
 using Content.Shared.Chat;
 using Content.Shared.Database;
-using Content.Shared.PDA;
 using Content.Shared.Radio;
 using Content.Shared.Radio.Components;
 using Content.Shared.Radio.EntitySystems;
-using Content.Shared.Silicons.Borgs.Components;
-using Content.Shared.Silicons.StationAi;
 using Content.Shared.Speech;
 using Robust.Shared.Map;
 using Robust.Shared.Network;
@@ -31,9 +25,8 @@ public sealed partial class RadioSystem : SharedRadioSystem
     [Dependency] private IRobustRandom _random = default!;
     [Dependency] private ChatSystem _chat = default!;
     [Dependency] private EntityQuery<TelecomExemptComponent> _exemptQuery = default!;
-    [Dependency] private AccessReaderSystem _accessReader = default!;
 
-// set used to prevent radio feedback loops.
+    // set used to prevent radio feedback loops.
     private readonly HashSet<string> _messages = new();
 
     public override void Initialize()
@@ -68,12 +61,8 @@ public sealed partial class RadioSystem : SharedRadioSystem
         var evt = new TransformSpeakerNameEvent(messageSource, MetaData(messageSource).EntityName);
         RaiseLocalEvent(messageSource, evt);
 
-        var (iconId, jobName) = GetJobIcon(messageSource);
-
         var name = evt.VoiceName;
-        name = _chat.ChatNameLinks ? $"[chatlink=\"{FormattedMessage.EscapeStringParameter(name)}\" ent=\"{GetNetEntity(messageSource)}\"]" : FormattedMessage.EscapeText(name);
-        
-        var namestring = _chat.JobIcon ? $"[icon src=\"{iconId}\" tooltip=\"{jobName}\"] {name}": name;
+        name = $"[chatlink=\"{FormattedMessage.EscapeStringParameter(name)}\" ent=\"{GetNetEntity(messageSource)}\"]";
 
         SpeechVerbPrototype speech;
         if (evt.SpeechVerb != null && ProtoMan.Resolve(evt.SpeechVerb, out var evntProto))
@@ -91,7 +80,7 @@ public sealed partial class RadioSystem : SharedRadioSystem
             ("fontSize", speech.FontSize),
             ("verb", Loc.GetString(_random.Pick(speech.SpeechVerbStrings))),
             ("channel", $"\\[{channel.LocalizedName}\\]"),
-            ("name", namestring),
+            ("name", name),
             ("message", content));
 
         // most radios are relayed to chat, so lets parse the chat message beforehand
@@ -149,54 +138,6 @@ public sealed partial class RadioSystem : SharedRadioSystem
 
         _replay.RecordServerMessage(chat);
         _messages.Remove(message);
-    }
-
-    private (string, string) GetJobIcon(EntityUid messageSource)
-    {
-        var iconId = "JobIconNoId";
-        var jobName = "";
-
-        if (_accessReader.FindAccessItemsInventory(messageSource, out var items))
-        {
-            foreach (var item in items)
-            {
-                // ID Card
-                if (TryComp<IdCardComponent>(item, out var id))
-                {
-                    iconId = id.JobIcon;
-                    jobName = id.LocalizedJobTitle;
-                    break;
-                }
-
-                // PDA
-                if (TryComp<PdaComponent>(item, out var pda)
-                    && pda.ContainedId != null
-                    && TryComp(pda.ContainedId, out id))
-                {
-                    iconId = id.JobIcon;
-                    jobName = id.LocalizedJobTitle;
-                    break;
-                }
-            }
-        }
-
-        if (TryComp<BorgChassisComponent>(messageSource, out var chassis) || HasComp<BorgBrainComponent>(messageSource)) // Starlight edit
-        {
-            iconId = chassis?.JobIconOverride ?? "JobIconBorg"; // Starlight edit
-            jobName = Loc.GetString(chassis?.LocalizedJobTitle ?? "job-name-borg"); // Starlight edit
-        }
-
-        if (HasComp<StationAiHeldComponent>(messageSource))
-        {
-            iconId = "JobIconStationAi";
-            jobName = Loc.GetString("job-name-station-ai");
-        }
-
-        jobName ??= "";
-
-        jobName = FormattedMessage.EscapeStringParameter(jobName);
-
-        return (iconId, jobName);
     }
 
     /// <inheritdoc cref="TelecomServerComponent"/>

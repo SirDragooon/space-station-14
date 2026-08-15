@@ -43,8 +43,6 @@ public abstract partial class SharedChatSystem : EntitySystem
         = new SoundPathSpecifier("/Audio/Announcements/announce.ogg");
 
     public static readonly ProtoId<RadioChannelPrototype> CommonChannel = "Common";
-    public bool ChatNameLinks { get; private set; }
-    public bool JobIcon { get; private set; }
 
     public static readonly string DefaultChannelPrefix = $"{RadioChannelPrefix}{DefaultChannelKey}";
     public static readonly ProtoId<SpeechVerbPrototype> DefaultSpeechVerb = "Default";
@@ -73,8 +71,6 @@ public abstract partial class SharedChatSystem : EntitySystem
         SubscribeAllEvent<ClickMessageSenderRequestEvent>(OnClickMessageSenderRequest);
         CacheRadios();
         CacheEmotes();
-        Subs.CVar(_config, CCVars.JobIcon, v => JobIcon = v, true);
-        Subs.CVar(_config, CCVars.ChatNameLinks, v => ChatNameLinks = v, true);
     }
 
     protected virtual void OnPrototypeReload(PrototypesReloadedEventArgs obj)
@@ -88,8 +84,6 @@ public abstract partial class SharedChatSystem : EntitySystem
 
     private void OnClickMessageSenderRequest(ClickMessageSenderRequestEvent msg, EntitySessionEventArgs args)
     {
-        if (!ChatNameLinks)
-            return;
 
         if (args.SenderSession.AttachedEntity is not { Valid: true } ent ||
             !CanClickMessageSender(ent))
@@ -343,19 +337,8 @@ public abstract partial class SharedChatSystem : EntitySystem
         return rawmsg;
     }
 
-    public static (int Start, int End) GetTagBounds(ChatMessage message, string tag)
-    {
-        var rawmsg = message.WrappedMessage;
-        var tagStart = rawmsg.IndexOf($"[{tag}]");
-        var tagEnd = rawmsg.IndexOf($"[/{tag}]");
-        return (tagStart, tagEnd);
-    }
-
-
     public bool CanClickMessageSender(EntityUid? ent)
     {
-        if (!ChatNameLinks)
-            return false;
 
         ent ??= _player.LocalEntity;
         if (ent == null)
