@@ -1,4 +1,5 @@
 ﻿using Content.Shared.Alert;
+using Content.Shared.StatusIcon;
 using Content.Shared.Whitelist;
 using Robust.Shared.Audio;
 using Robust.Shared.Containers;
@@ -146,6 +147,11 @@ public sealed partial class BorgChassisComponent : Component
     /// </summary>
     [DataField]
     public bool CanOpenSelfUi;
+
+    [DataField] public ProtoId<JobIconPrototype> JobIconOverride = "JobIconBorg";
+    [DataField] private string? _jobTitle;
+    [DataField] public LocId? JobTitleOverride = "job-name-borg";
+    public string? LocalizedJobTitle { set => _jobTitle = value; get => _jobTitle ?? Loc.GetString(JobTitleOverride ?? string.Empty); }
 }
 
 [Serializable, NetSerializable]

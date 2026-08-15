@@ -86,4 +86,7 @@ public sealed partial class CCVars
 
     public static readonly CVarDef<bool> ChatNameLinks =
         CVarDef.Create("chat.chat_name_links", true, CVar.REPLICATED | CVar.SERVER, "Toggles Chat Name Link functionality.");
+
+    public static readonly CVarDef<bool> JobIcon =
+        CVarDef.Create("chat.job_icon", true, CVar.REPLICATED | CVar.SERVER, "Toggles Job Icon functionality.");
 }

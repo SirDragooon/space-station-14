@@ -44,6 +44,7 @@ public abstract partial class SharedChatSystem : EntitySystem
 
     public static readonly ProtoId<RadioChannelPrototype> CommonChannel = "Common";
     public bool ChatNameLinks { get; private set; }
+    public bool JobIcon { get; private set; }
 
     public static readonly string DefaultChannelPrefix = $"{RadioChannelPrefix}{DefaultChannelKey}";
     public static readonly ProtoId<SpeechVerbPrototype> DefaultSpeechVerb = "Default";
@@ -72,7 +73,7 @@ public abstract partial class SharedChatSystem : EntitySystem
         SubscribeAllEvent<ClickMessageSenderRequestEvent>(OnClickMessageSenderRequest);
         CacheRadios();
         CacheEmotes();
-
+        Subs.CVar(_config, CCVars.JobIcon, v => JobIcon = v, true);
         Subs.CVar(_config, CCVars.ChatNameLinks, v => ChatNameLinks = v, true);
     }
 
