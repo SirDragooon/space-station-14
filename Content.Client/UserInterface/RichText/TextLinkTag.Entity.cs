@@ -25,7 +25,7 @@ public sealed partial class TextLinkTag
             return false;
 
         var chat = _entity.System<SharedChatSystem>();
-        var clickable = chat.CanClickMessageSender(null);
+        var clickable = chat.CanClickMessageSender();
 
         var color = GetLinkColor(node, netEntity);
 

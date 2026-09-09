@@ -4,9 +4,11 @@ using System.Text.RegularExpressions;
 using Content.Shared.ActionBlocker;
 using Content.Shared.CCVar;
 using Content.Shared.Chat.Prototypes;
+using Content.Shared.Follower;
 using Content.Shared.Popups;
 using Content.Shared.Radio;
 using Content.Shared.Speech;
+using Content.Shared.Tag;
 using Content.Shared.Whitelist;
 using Robust.Shared.Audio;
 using Robust.Shared.Audio.Systems;
@@ -48,14 +50,16 @@ public abstract partial class SharedChatSystem : EntitySystem
     public static readonly string DefaultChannelPrefix = $"{RadioChannelPrefix}{DefaultChannelKey}";
     public static readonly ProtoId<SpeechVerbPrototype> DefaultSpeechVerb = "Default";
 
-    [Dependency] private SharedPopupSystem _popup = default!;
-    [Dependency] private EntityWhitelistSystem _whitelist = default!;
-    [Dependency] private ActionBlockerSystem _actionBlocker = default!;
-    [Dependency] private SharedAudioSystem _audio = default!;
-    [Dependency] private IRobustRandom _random = default!;
+    [Dependency] protected IConfigurationManager Config = default!;
     [Dependency] private INetManager _net = default!;
+    [Dependency] protected IRobustRandom Random = default!;
     [Dependency] private ISharedPlayerManager _player = default!;
-    [Dependency] private IConfigurationManager _config = default!;
+    [Dependency] private ActionBlockerSystem _actionBlocker = default!;
+    [Dependency] private EntityWhitelistSystem _whitelist = default!;
+    [Dependency] private FollowerSystem _follower = default!;
+    [Dependency] private SharedAudioSystem _audio = default!;
+    [Dependency] private SharedPopupSystem _popup = default!;
+    [Dependency] private TagSystem _tag = default!;
 
     /// <summary>
     /// Cache of the keycodes for faster lookup.
@@ -69,11 +73,11 @@ public abstract partial class SharedChatSystem : EntitySystem
         DebugTools.Assert(ProtoMan.HasIndex(CommonChannel));
 
         SubscribeLocalEvent<PrototypesReloadedEventArgs>(OnPrototypeReload);
-        SubscribeAllEvent<ClickMessageSenderRequestEvent>(OnClickMessageSenderRequest);
+        SubscribeAllEvent<ChatLinkClickedRequestEvent>(OnChatMessageLinkClicked);
         CacheRadios();
         CacheEmotes();
 
-        Subs.CVar(_config, CCVars.ChatNameLinks, v => ChatNameLinks = v, true);
+        Subs.CVar(Config, CCVars.ChatNameLinks, v => ChatNameLinks = v, true);
     }
 
     protected virtual void OnPrototypeReload(PrototypesReloadedEventArgs obj)
@@ -85,28 +89,29 @@ public abstract partial class SharedChatSystem : EntitySystem
             CacheEmotes();
     }
 
-    private void OnClickMessageSenderRequest(ClickMessageSenderRequestEvent msg, EntitySessionEventArgs args)
+    private void OnChatMessageLinkClicked(ChatLinkClickedRequestEvent msg, EntitySessionEventArgs args)
     {
         if (!ChatNameLinks)
             return;
 
-        if (args.SenderSession.AttachedEntity is not { Valid: true } ent ||
-            !CanClickMessageSender(ent))
+        if (args.SenderSession.AttachedEntity is not { Valid: true } ent || !CanClickMessageSender(ent))
         {
             return;
         }
 
-        if (GetEntity(msg.Sender) is not { Valid: true } sender ||
-            !Exists(sender))
+        if (GetEntity(msg.Target) is not { Valid: true } target || !Exists(target))
         {
             return;
         }
 
-        if (ent == sender)
+        if (ent == target)
             return;
 
-        var ev = new ClickMessageSenderEvent(sender);
-        RaiseLocalEvent(ent, ref ev);
+        // TODO: Move this to Ghost System!
+        if (_tag.HasTag(target, FollowerSystem.PreventGhostnadoWarpTag)) //tag is used on any ghost that shouldn't be teleported to
+            return;
+
+        _follower.StartFollowingEntity(ent, target);
     }
 
     private void CacheRadios()
@@ -342,7 +347,12 @@ public abstract partial class SharedChatSystem : EntitySystem
         return rawmsg;
     }
 
-    public bool CanClickMessageSender(EntityUid? ent)
+    /// <summary>
+    /// Checks whether an entity can click a chat message link.
+    /// </summary>
+    /// <param name="ent">Entity that is attempting to click the chat message, defaults to attached player entity if null.</param>
+    /// <returns>True if the entity is able to click the link</returns>
+    public bool CanClickMessageSender(EntityUid? ent = null)
     {
         if (!ChatNameLinks)
             return false;
@@ -351,7 +361,7 @@ public abstract partial class SharedChatSystem : EntitySystem
         if (ent == null)
             return false;
 
-        var ev = new ClickMessageSenderAttemptEvent();
+        var ev = new CanClickEntityLinkEvent();
         RaiseLocalEvent(ent.Value, ref ev);
         return ev.Handled;
     }

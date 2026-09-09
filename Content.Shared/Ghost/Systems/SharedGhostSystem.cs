@@ -1,13 +1,12 @@
-using Content.Shared.Administration.Managers;
+using Content.Shared.Chat;
 using Content.Shared.Emoting;
 using Content.Shared.Examine;
+using Content.Shared.Follower;
 using Content.Shared.Ghost.Components;
 using Content.Shared.Hands;
 using Content.Shared.Interaction.Events;
 using Content.Shared.Item;
 using Content.Shared.Popups;
-using Content.Shared.Chat;
-using Content.Shared.Follower;
 using Content.Shared.Tag;
 using Robust.Shared.Serialization;
 using Robust.Shared.Timing;
@@ -22,7 +21,6 @@ public abstract partial class SharedGhostSystem : EntitySystem
 {
     [Dependency] protected SharedPopupSystem Popup = default!;
     [Dependency] protected IGameTiming _gameTiming = default!;
-    [Dependency] private ISharedAdminManager _adminManager = default!;
     [Dependency] private FollowerSystem _follower = default!;
     [Dependency] private TagSystem _tag = default!;
 
@@ -124,18 +122,9 @@ public abstract partial class SharedGhostSystem : EntitySystem
     }
 
     [SubscribeLocalEvent]
-    private void OnGhostClickMessageSenderAttempt(Entity<GhostComponent> ent, ref ClickMessageSenderAttemptEvent args)
+    private void OnGhostClickMessageSenderAttempt(Entity<GhostComponent> ent, ref CanClickEntityLinkEvent args)
     {
         args.Handled = true;
-    }
-    [SubscribeLocalEvent]
-    private void OnGhostClickMessageSender(Entity<GhostComponent> ent, ref ClickMessageSenderEvent args)
-    {
-        if (_tag.HasTag(args.Sender, FollowerSystem.PreventGhostnadoWarpTag)) //tag is used on any ghost that shouldn't be teleported to
-        {
-            return;
-        }
-        _follower.StartFollowingEntity(ent, args.Sender);
     }
 }
 

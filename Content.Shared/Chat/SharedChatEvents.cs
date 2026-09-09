@@ -78,14 +78,13 @@ public sealed class EntitySpokeEvent : EntityEventArgs
 }
 
 [ByRefEvent]
-public record struct ClickMessageSenderAttemptEvent(bool Handled = false);
-
-[ByRefEvent]
-public record struct ClickMessageSenderEvent(EntityUid Sender, bool Handled = false);
-
+public record struct CanClickEntityLinkEvent
+{
+    public bool Handled;
+}
 
 [Serializable, NetSerializable]
-public sealed class ClickMessageSenderRequestEvent(NetEntity sender) : EntityEventArgs
+public sealed class ChatLinkClickedRequestEvent(NetEntity target) : EntityEventArgs
 {
-    public readonly NetEntity Sender = sender;
+    public readonly NetEntity Target = target;
 }

@@ -160,7 +160,7 @@ public partial class ChatBox : UIWidget, IEntityLinkClickHandler
 
     public void HandleClick(NetEntity netEntity)
     {
-        _entManager.RaisePredictiveEvent(new ClickMessageSenderRequestEvent(netEntity));
+        _entManager.RaisePredictiveEvent(new ChatLinkClickedRequestEvent(netEntity));
     }
 
     private void OnInputKeyBindDown(GUIBoundKeyEventArgs args)
